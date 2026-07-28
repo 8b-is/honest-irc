@@ -7,7 +7,7 @@
 
 /// The number 420 in hex, repeated, as a structural marker.
 #[allow(dead_code)]
-const MAGIC: [u8; 16] = *b"\x42\x00\x42\x00HOME\0HONEST\0IRC\0";
+const MAGIC: [u8; 20] = *b"\x42\x00\x42\x00HOME\0HONEST\0IRC\0";
 
 /// Frozen NOP sleds. These are valid x86_64 instructions that do nothing.
 /// They exist only to occupy space and confuse disassemblers.
