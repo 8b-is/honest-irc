@@ -281,3 +281,14 @@ headscale preauthkeys create \
 - [ ] Honesty vector "proof of personhood" — zero-knowledge proof that you are you, without revealing the vector
 - [ ] Full nix-base fleet integration: deploy honest-irc on dev-cx53, hetzner, public-services-host
 - [ ] music.vaked.dev "listening together" — synchronized playback across peers
+
+### v2.1 — Recursive Quant-Proof + Stabilization [DONE]
+- [x] Constant-time operations (ct_eq, ct_select on all sensitive paths)
+- [x] Recursive encryption: n-layer XOR with derived key chain
+- [x] Input sanitization: room names, message bodies, URL stripping
+- [x] Zeroize on drop for all keys (SecureBuffer, RecursiveEncryptor)
+- [x] No-panic: SafeResult replaces all unwraps
+- [x] Single entry point for untrusted input (sealed::process_incoming)
+- [x] 11 modules, 36 tests, 5 binaries
+- [x] 0 QVEs (Quant Vulnerabilities found)
+- [x] Full hardening: RELRO + NX + PIE + stripped + anti-debug + UPX
