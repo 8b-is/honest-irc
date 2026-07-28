@@ -216,12 +216,14 @@ headscale preauthkeys create \
 - [x] Blacksmith CI + cosign signing
 - [x] All 7 Rust tests passing
 
-### v0.2.0 — Sidecar Sidecars
-- [ ] `honest-vpn` binary: Mullvad double-hop WireGuard via CLI
-- [ ] `honest-crypt` binary: Kyber-1024 + X25519 hybrid KEM
-- [ ] `honest-mesh` binary: Headscale/Tailscale auto-join
-- [ ] `honest-ircd` binary: standalone daemon with Unix socket
-- [ ] Sidecar orchestration: `honest-irc up` spawns all 4
+### v0.2.0 — Sidecar Sidecars [DONE]
+- [x] `honest-vpn` binary: Mullvad double-hop WireGuard via CLI
+- [x] `honest-crypt` binary: Kyber-1024 + X25519 hybrid KEM
+- [x] `honest-mesh` binary: Headscale/Tailscale auto-join
+- [x] `honest-ircd` binary: standalone daemon with TCP listener (:9667)
+- [x] Sidecar orchestration: `honest-irc up` spawns all 4
+- [x] ASCII architecture blueprint (ARCHITECTURE.txt)
+- [x] Pimped README with embedded architecture + security table
 
 ### v0.3.0 — Memory Fortress
 - [ ] `memfd_create` + `F_SEAL_WRITE` for chat/crypto/identity/seed regions
