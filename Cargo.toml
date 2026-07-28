@@ -1,0 +1,29 @@
+[package]
+name = "honest-irc"
+version = "0.1.0"
+edition = "2021"
+description = "Quantum-proof decentralized messaging. Auth via honesty. Mesh via Tailnet. Crypto via Kyber + Dilithium."
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+hex = "0.4"
+rand = "0.8"
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+chacha20poly1305 = "0.10"
+zeroize = { version = "1", features = ["derive"] }
+
+# WebSocket for IRC-like protocol
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = "0.24"
+futures-util = "0.3"
+
+# PQC algorithms — placeholder until pqcrypto crates stabilize
+# pqcrypto-kyber = "0.7"      # CRYSTALS-Kyber KEM
+# pqcrypto-dilithium = "0.5"  # CRYSTALS-Dilithium signatures
+# pqcrypto-sphincsplus = "0.3" # SPHINCS+ signatures
+
+# Note: PQC crates are placeholder until pqcrypto ecosystem matures.
+# Currently using classical X25519 + ChaCha20 as the transport layer.
+# Hybrid mode (Kyber + X25519) will be added when pqcrypto crates are stable.
