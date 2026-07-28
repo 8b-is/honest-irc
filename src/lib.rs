@@ -7,6 +7,7 @@ pub mod music;
 pub mod pqc;
 pub mod guard;
 pub mod hardening;
+pub mod frozen;
 
 pub use honesty::{HonestyVector, HonestyFields};
 pub use crypto::{Identity, DisplayName, NameRegistry, CryptoSession, route_id};
