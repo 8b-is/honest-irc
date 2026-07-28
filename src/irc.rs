@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use crate::honesty::HonestyVector;
 use crate::crypto::{CryptoSession, Identity};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

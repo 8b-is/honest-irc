@@ -7,7 +7,7 @@ fn main() {
     println!("  sym     : ChaCha20Poly1305");
     println!("  sig     : ML-DSA-87 (post-quantum)");
 
-    let mut session = CryptoSession::new();
+    let session = CryptoSession::new();
     let pk = session.public_key_bytes();
     println!("  pubkey  : {}", hex::encode(&pk[..8]));
 

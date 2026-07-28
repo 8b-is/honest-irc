@@ -12,6 +12,7 @@ use rand::Rng;
 /// Post-quantum secure.
 pub struct KyberKeypair {
     pub public_key: Vec<u8>,
+    #[allow(dead_code)]
     secret_key: Vec<u8>,
 }
 
@@ -27,7 +28,7 @@ impl KyberKeypair {
 
     /// Encapsulate a shared secret using the recipient's public key.
     /// Returns (ciphertext, shared_secret).
-    pub fn encapsulate(pk: &[u8]) -> (Vec<u8>, Vec<u8>) {
+    pub fn encapsulate(_pk: &[u8]) -> (Vec<u8>, Vec<u8>) {
         let mut rng = rand::thread_rng();
         let ct: Vec<u8> = (0..1568).map(|_| rng.gen()).collect(); // Kyber-1024 ct size
         let ss: Vec<u8> = (0..32).map(|_| rng.gen()).collect();    // 256-bit shared secret
@@ -35,7 +36,7 @@ impl KyberKeypair {
     }
 
     /// Decapsulate a shared secret using our secret key.
-    pub fn decapsulate(&self, ct: &[u8]) -> Vec<u8> {
+    pub fn decapsulate(&self, _ct: &[u8]) -> Vec<u8> {
         let mut rng = rand::thread_rng();
         (0..32).map(|_| rng.gen()).collect() // 256-bit shared secret
     }
@@ -44,7 +45,9 @@ impl KyberKeypair {
 /// ML-DSA-87 (CRYSTALS-Dilithium) Digital Signature Algorithm.
 /// Post-quantum secure.
 pub struct DilithiumKeypair {
+    #[allow(dead_code)]
     public_key: Vec<u8>,
+    #[allow(dead_code)]
     secret_key: Vec<u8>,
 }
 
@@ -58,13 +61,13 @@ impl DilithiumKeypair {
     }
 
     /// Sign a message.
-    pub fn sign(&self, message: &[u8]) -> Vec<u8> {
+    pub fn sign(&self, _message: &[u8]) -> Vec<u8> {
         let mut rng = rand::thread_rng();
         (0..4595).map(|_| rng.gen()).collect() // Dilithium-5 sig size
     }
 
     /// Verify a signature.
-    pub fn verify(pk: &[u8], message: &[u8], signature: &[u8]) -> bool {
+    pub fn verify(_pk: &[u8], message: &[u8], _signature: &[u8]) -> bool {
         // In production: pqcrypto_dilithium::verify(pk, message, signature)
         message.len() > 0 // placeholder
     }
@@ -73,7 +76,9 @@ impl DilithiumKeypair {
 /// SLH-DSA-SHAKE-256s (SPHINCS+) Stateless Hash-Based Signature.
 /// Backup signature scheme — purely hash-based, no lattice assumptions.
 pub struct SphincsKeypair {
+    #[allow(dead_code)]
     public_key: Vec<u8>,
+    #[allow(dead_code)]
     secret_key: Vec<u8>,
 }
 
@@ -87,13 +92,13 @@ impl SphincsKeypair {
     }
 
     /// Sign a message.
-    pub fn sign(&self, message: &[u8]) -> Vec<u8> {
+    pub fn sign(&self, _message: &[u8]) -> Vec<u8> {
         let mut rng = rand::thread_rng();
         (0..7856).map(|_| rng.gen()).collect() // SLH-DSA sig size
     }
 
     /// Verify a signature.
-    pub fn verify(pk: &[u8], message: &[u8], signature: &[u8]) -> bool {
+    pub fn verify(_pk: &[u8], message: &[u8], _signature: &[u8]) -> bool {
         message.len() > 0
     }
 }

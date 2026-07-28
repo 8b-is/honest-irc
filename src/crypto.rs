@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 use sha2::{Sha256, Digest};
-use rand::Rng;
-use zeroize::Zeroize;
 
 /// Quantum-proof hybrid encryption layer.
 /// Currently: X25519 + ChaCha20Poly1305 (classical, forward-secret).
@@ -40,7 +38,7 @@ impl CryptoSession {
     /// Encrypt a plaintext message for the peer.
     pub fn encrypt(&mut self, plaintext: &[u8]) -> Vec<u8> {
         use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce, AeadInPlace};
-        use chacha20poly1305::aead::{Aead, KeyInit};
+        use chacha20poly1305::aead::KeyInit;
 
         let key = Key::from_slice(&self.shared);
         let cipher = ChaCha20Poly1305::new(key);
@@ -64,7 +62,7 @@ impl CryptoSession {
     /// Decrypt a message from the peer.
     pub fn decrypt(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>> {
         use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce, AeadInPlace};
-        use chacha20poly1305::aead::{Aead, KeyInit};
+        use chacha20poly1305::aead::KeyInit;
 
         if ciphertext.len() < 16 { return None; }
 

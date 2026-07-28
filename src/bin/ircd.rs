@@ -1,4 +1,4 @@
-use honest_irc::irc::{IrcDaemon, Message};
+use honest_irc::irc::IrcDaemon;
 use honest_irc::crypto::{Identity, DisplayName};
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;

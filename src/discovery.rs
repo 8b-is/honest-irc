@@ -1,5 +1,3 @@
-use crate::honesty::HonestyVector;
-use crate::irc::Message;
 use std::collections::HashMap;
 
 /// Search engine for public group history.

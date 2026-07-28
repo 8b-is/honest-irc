@@ -1,5 +1,3 @@
-use std::fs::File;
-use std::os::unix::io::FromRawFd;
 
 /// Self-encrypted memory region.
 /// Uses memfd_create + F_SEAL_WRITE + mlock.
@@ -7,6 +5,7 @@ use std::os::unix::io::FromRawFd;
 pub struct SealedMemory {
     pub ptr: *mut u8,
     pub size: usize,
+    #[allow(dead_code)]
     fd: Option<std::fs::File>,
 }
 
@@ -15,7 +14,7 @@ impl SealedMemory {
     /// The region is: created via memfd (no disk backing), sealed against writes,
     /// locked in RAM via mlock, and set read-only via mprotect.
     pub fn create(name: &str, size: usize) -> Result<Self, String> {
-        let name_c = std::ffi::CString::new(name).map_err(|e| e.to_string())?;
+        let _name_c = std::ffi::CString::new(name).map_err(|e| e.to_string())?;
 
         #[cfg(target_os = "linux")]
         {
