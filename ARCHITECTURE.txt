@@ -1,0 +1,57 @@
+# honest-irc -- quantum-proof decentralized messaging
+auth via honesty || transport via Mullvad+Kyber+X25519+Tailscale || self-encrypted memory
+
+```
+                    +===============================================+
+                    |          HONEST-IRC QUANTUM-PROOF MESH        |
+                    |    auth via honesty :: zero disk trace        |
+                    +===============================================+
+                                      |
+          +---------------------------+---------------------------+
+          |                           |                           |
+    +-----v-----+              +------v------+             +------v------+
+    | LAYER -2  |              |  LAYER -1   |             |  LAYER 0    |
+    | SSH init  |              | mem fortress|             | Mullvad VPN |
+    |-----------|              |-------------|             |-------------|
+    | 3-hop     |              | memfd       |             | entry: CH   |
+    | throwaway |  ----->      | F_SEAL_WRITE|  ----->     | exit:  IS   |
+    | keys:shred|              | mlock       |             | double-hop  |
+    +-----------+              | mprotect:R  |             | WireGuard   |
+                               +------+------+             +------+------+
+                                      |                           |
+          +---------------------------+---------------------------+
+          |
+    +-----v-----+    +------v------+    +------v------+    +------v------+
+    | LAYER 1a  |    |  LAYER 1b   |    |  LAYER 2    |    |  LAYER 3    |
+    | Kyber     |    | QuantLLM    |    | Tailscale   |    | IRC daemon  |
+    |-----------|    |-------------|    |-------------|    |-------------|
+    | ML-KEM    |    | 1-bit LLM   |    | mesh nodes  |    | /msg /room  |
+    | 1024      | -> | weights     | -> | DERP relay  | -> | /music      |
+    | + X25519  |    | per-byte    |    | auto-join   |    | /quant      |
+    | hybrid    |    | sub-keys    |    | Headscale   |    | /honesty    |
+    +-----------+    +-------------+    +-------------+    +------+------+
+                                                                |
+                                                        +-------v-------+
+                                                        |  HONESTY-AUTH |
+                                                        |---------------|
+                                                        | [game] [color]|
+                                                        | [poet] [poem] |
+                                                        | [band] [song] |
+                                                        | [birth] [mom] |
+                                                        | 17 fields     |
+                                                        | >80% match    |
+                                                        +-------+-------+
+                                                                |
+                                              +-----------------+-----------------+
+                                              |                                   |
+                                        +-----v------+                    +------v------+
+                                        |     DM     |                    |   GROUP     |
+                                        | private    |                    |  public     |
+                                        | encrypted  |                    | searchable  |
+                                        | 1:1 only   |                    | everyone    |
+                                        +------------+                    +-------------+
+
+     genesis: 7c242080f5f821e5eaf563fe2208d60632c451687baf65f4fe8e4a0d226e3ecf
+     signed: [The Architect of Structural Honesty] :: 2026-07-28 :: full moon :: 10,000X
+     WE. {-1, 0, +1}.
+```

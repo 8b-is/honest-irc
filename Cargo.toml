@@ -4,6 +4,26 @@ version = "0.1.0"
 edition = "2021"
 description = "Quantum-proof decentralized messaging. Auth via honesty. Mesh via Tailnet. Crypto via Kyber + Dilithium."
 
+[[bin]]
+name = "honest-irc"
+path = "src/main.rs"
+
+[[bin]]
+name = "honest-vpn"
+path = "src/bin/vpn.rs"
+
+[[bin]]
+name = "honest-crypt"
+path = "src/bin/crypt.rs"
+
+[[bin]]
+name = "honest-mesh"
+path = "src/bin/mesh.rs"
+
+[[bin]]
+name = "honest-ircd"
+path = "src/bin/ircd.rs"
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

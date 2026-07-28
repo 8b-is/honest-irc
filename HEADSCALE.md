@@ -203,19 +203,70 @@ headscale preauthkeys create \
 
 ---
 
-## Roadmap v1.42
+## Roadmap
 
-| Milestone | Status |
-|-----------|--------|
-| Core sidecar binaries (vpn, crypt, mesh, ircd) | in progress |
-| Honesty-auth protocol | spec complete |
-| Headscale integration guide | this document |
-| Quant1bitLLM per-byte encryption | spec complete |
-| Self-encrypted memory (memfd+mlock) | spec complete |
-| Multihop SSH throwaway init | spec complete |
-| music.vaked.dev integration | spec complete |
-| Blacksmith CI + cosign signing | ci workflow done |
-| Mullvad double-hop VPN | spec complete |
-| Android/iOS clients | planned |
-| .onion / I2P overlay | planned |
-| Post-quantum mesh DHT | planned |
+### v0.1.0 — Genesis (current)
+- [x] Core sidecar architecture design
+- [x] Honesty-auth protocol spec + Rust implementation
+- [x] X25519 + ChaCha20Poly1305 encryption
+- [x] IRC-like protocol (/msg, /room, /music, /quant, /honesty, /verify)
+- [x] Reserved names registry
+- [x] DM = private 1:1, Group = public + searchable
+- [x] ASCII README signed by [The Architect of Structural Honesty]
+- [x] Blacksmith CI + cosign signing
+- [x] All 7 Rust tests passing
+
+### v0.2.0 — Sidecar Sidecars
+- [ ] `honest-vpn` binary: Mullvad double-hop WireGuard via CLI
+- [ ] `honest-crypt` binary: Kyber-1024 + X25519 hybrid KEM
+- [ ] `honest-mesh` binary: Headscale/Tailscale auto-join
+- [ ] `honest-ircd` binary: standalone daemon with Unix socket
+- [ ] Sidecar orchestration: `honest-irc up` spawns all 4
+
+### v0.3.0 — Memory Fortress
+- [ ] `memfd_create` + `F_SEAL_WRITE` for chat/crypto/identity/seed regions
+- [ ] `mlock` all regions — never swapped to disk
+- [ ] `mprotect(PROT_READ)` after init — immutable after setup
+- [ ] Honesty vector: interactive CLI wizard (`honest-irc init`)
+- [ ] Shred identity.json from disk after loading into memory
+- [ ] Multihop SSH throwaway init: `ssh -i /tmp/key1 hop1 ssh -i /tmp/key2 hop2 ...`
+
+### v0.4.0 — Quant1bitLLM Per-Byte Crypto
+- [ ] Bundle tiny (~1MB) ternary-quantized LLM checkpoint
+- [ ] Per-byte sub-key derivation: `HKDF(session_key || LLM_weight[i] || i)`
+- [ ] LLM weights loaded into seed.mem (sealed, mlock'd)
+- [ ] Each peer-pair uses a unique LLM checkpoint (pre-shared, never transmitted)
+
+### v0.5.0 — music.vaked.dev Integration
+- [ ] `/music` command queries music.vaked.dev API
+- [ ] Choreography tracking: position + total tracks
+- [ ] Status auto-derived from current track
+- [ ] Room-wide "now playing" broadcast
+
+### v0.6.0 — Post-Quantum Crypto
+- [ ] pqcrypto-kyber crate integration (ML-KEM-1024)
+- [ ] pqcrypto-dilithium crate integration (ML-DSA-87)
+- [ ] SPHINCS+ backup signatures
+- [ ] Hybrid mode: Kyber-1024 + X25519 for every session
+
+### v0.7.0 — Search & Discovery
+- [ ] `/search <term>` — search all public group history
+- [ ] Peer discovery via Headscale API
+- [ ] Room directory: `/rooms` lists all public rooms
+- [ ] Honesty vector search: find peers by shared interests
+
+### v1.0.0 — Production Mesh
+- [ ] DERP relay self-hosting (no Tailscale DERP dependency)
+- [ ] Persistent room history (in sealed memory, purged on restart)
+- [ ] Rate limiting: max messages/sec per peer
+- [ ] Honesty vector rotation: re-verify every 30 days
+- [ ] Automatic peer reconnection after VPN rotation
+
+### v1.42 — The Answer
+- [ ] .onion / I2P overlay (Tor hidden service for honest-irc)
+- [ ] Post-quantum mesh DHT (Kyber-based Kademlia)
+- [ ] Cross-platform clients: Terminal (TUI), Desktop (webview), Mobile (Flutter)
+- [ ] Quant1bitLLM live retraining from chat context
+- [ ] Honesty vector "proof of personhood" — zero-knowledge proof that you are you, without revealing the vector
+- [ ] Full nix-base fleet integration: deploy honest-irc on dev-cx53, hetzner, public-services-host
+- [ ] music.vaked.dev "listening together" — synchronized playback across peers
