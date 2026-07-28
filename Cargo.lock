@@ -255,6 +255,7 @@ dependencies = [
  "futures-util",
  "hex",
  "hkdf",
+ "libc",
  "rand",
  "serde",
  "serde_json",
