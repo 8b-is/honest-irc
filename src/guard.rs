@@ -17,11 +17,11 @@ pub fn disallow_debugging() {
 
     #[cfg(target_os = "macos")]
     {
-        // macOS: check via sysctl for P_TRACED flag
-        // In production: use ptrace(PT_DENY_ATTACH, 0, 0, 0)
-        unsafe {
-            libc::ptrace(libc::PT_DENY_ATTACH, 0, 0, 0);
-        }
+        // macOS: PT_DENY_ATTACH prevents future debugger attachments
+        // If a debugger is already attached, this call has no effect
+        // but the process should refuse to run if being traced
+        extern "C" { fn ptrace(request: i32, pid: i32, addr: *const u8, data: i32) -> i32; }
+        unsafe { ptrace(31, 0, std::ptr::null(), 0); } // 31 = PT_DENY_ATTACH
     }
 }
 
