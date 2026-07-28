@@ -111,8 +111,8 @@ impl Drop for SealedMemory {
         #[cfg(target_os = "linux")]
         unsafe {
             if !self.ptr.is_null() {
-                libc::munlock(self.ptr, self.size);
-                libc::munmap(self.ptr as *mut libc::c_void, self.size);
+                libc::munlock(self.ptr, self.size as libc::size_t);
+                libc::munmap(self.ptr as *mut libc::c_void, self.size as libc::size_t);
             }
             // fd is dropped by the File wrapper, which closes it.
             // The kernel reclaims the memfd memory.
