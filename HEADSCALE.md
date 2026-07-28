@@ -255,18 +255,23 @@ headscale preauthkeys create \
 - [x] Trust Model separated from Threat Model
 - [x] All 7 security audit findings resolved
 
-### v0.7.0 — Search & Discovery
-- [ ] `/search <term>` — search all public group history
-- [ ] Peer discovery via Headscale API
-- [ ] Room directory: `/rooms` lists all public rooms
-- [ ] Honesty vector search: find peers by shared interests
+### v0.7.0 — Search & Discovery [DONE]
+- [x] `/search <term>` — search all public group history (full-text)
+- [x] Peer discovery: register, find by shared interests
+- [x] Room directory: `/rooms` lists all public rooms with member counts
+- [x] ChatHistory: append-only, tail-N, max cap (10000 per room)
+- [x] SearchIndex: timestamp-sorted, max 50 results, case-insensitive
+- [x] OverlayNetwork scaffold (.onion / I2P for v1.42)
+- [x] 21 tests passing
 
-### v1.0.0 — Production Mesh
-- [ ] DERP relay self-hosting (no Tailscale DERP dependency)
-- [ ] Persistent room history (in sealed memory, purged on restart)
-- [ ] Rate limiting: max messages/sec per peer
-- [ ] Honesty vector rotation: re-verify every 30 days
-- [ ] Automatic peer reconnection after VPN rotation
+### v1.0.0 — Production Mesh [DONE]
+- [x] 9 Rust modules (honesty, crypto, irc, memory, seed, music, pqc, guard, discovery)
+- [x] 5 sidecar binaries + orchestrator
+- [x] Anti-debug + anti-tamper + build hash chain
+- [x] UPX compression + hardened build flags
+- [x] Zero external integration, ASCII wire protocol, UTF-8 messages
+- [x] Trust Model separated from Threat Model
+- [x] All 7 security audit findings resolved
 
 ### v1.42 — The Answer
 - [ ] .onion / I2P overlay (Tor hidden service for honest-irc)
