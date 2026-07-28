@@ -1,6 +1,6 @@
 [package]
 name = "honest-irc"
-version = "0.1.0"
+version = "2.1.0"
 edition = "2021"
 description = "Quantum-proof decentralized messaging. Auth via honesty. Mesh via Tailnet. Crypto via Kyber + Dilithium."
 
