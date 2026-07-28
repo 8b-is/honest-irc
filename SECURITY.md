@@ -249,3 +249,14 @@ a cryptographic defense — it is a social/behavioral trust mechanism.
 | Metadata analysis | Double-hop VPN hides source, Tailnet hides peer topology |
 | mlock limit exceeded | CAP_IPC_LOCK via setcap, documented in setup |
 | memfd seal prevents key rotation | crypto.mem keeps write access for rotation |
+
+## Invariant: Zero External Integration
+
+honest-irc is a fully air-gapped messaging system. The following are PROHIBITED:
+
+- URL/link sharing of any kind — all URLs are stripped from messages
+- Egress connections — honest-ircd never connects outward except to peers
+- External API calls — music.vaked.dev data is local choreography only
+- Image/media embedding — text-only protocol
+- All integrations are LOCAL: choreographies live in sealed memory, never fetched
+
