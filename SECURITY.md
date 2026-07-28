@@ -3,43 +3,50 @@
 ## Zero-Disk. Zero-Trace. Self-Encrypted Memory.
 
 > The chat lives only in encrypted memory regions. Nothing touches disk.
-> Per-byte encryption seeded by a 1-bit quantized LLM. Multihop SSH bootstrap
-> with throwaway keys. When the process dies, the data dies with it.
+> Per-byte encryption seeded by a quantized LLM + CSPRNG nonce via HKDF.
+> Multihop SSH bootstrap via /dev/fd pipes (never touches filesystem).
+> When the process dies, the data dies with it.
 
 ---
 
-## Layer -2: Multihop SSH Throwaway Init
+## Layer -2: Multihop SSH Throwaway Init (RAM-only)
 
 Before any sidecar starts, the connection is bootstrapped through
-a chain of throwaway SSH hops:
+a chain of throwaway SSH hops using /dev/fd pipes — keys never touch disk:
 
 ```
 honest-irc init
   │
   ▼
-ssh-keygen -t ed25519 -f /tmp/honest-hop-1 -N ""  (throwaway, deleted after use)
-ssh-keygen -t ed25519 -f /tmp/honest-hop-2 -N ""  (throwaway)
-ssh-keygen -t ed25519 -f /tmp/honest-hop-3 -N ""  (throwaway)
+# Generate Ed25519 keys directly into RAM pipes (NOT /tmp)
+mkfifo /dev/shm/honest-hop-1.sk
+ssh-keygen -t ed25519 -f /dev/fd/3 -N "" 3>/dev/shm/honest-hop-1.sk &
+mkfifo /dev/shm/honest-hop-2.sk
+ssh-keygen -t ed25519 -f /dev/fd/4 -N "" 4>/dev/shm/honest-hop-2.sk &
+mkfifo /dev/shm/honest-hop-3.sk
+ssh-keygen -t ed25519 -f /dev/fd/5 -N "" 5>/dev/shm/honest-hop-3.sk &
   │
   ▼
-ssh -i /tmp/honest-hop-1 user@hop1.example.com \
-  ssh -i /tmp/honest-hop-2 user@hop2.example.com \
-    ssh -i /tmp/honest-hop-3 user@hop3.example.com \
+ssh -i /dev/fd/3 user@hop1.example.com \
+  ssh -i /dev/fd/4 user@hop2.example.com \
+    ssh -i /dev/fd/5 user@hop3.example.com \
       "exec honest-irc up --no-init"
   │
   ▼
-shred -zu /tmp/honest-hop-1 /tmp/honest-hop-2 /tmp/honest-hop-3
+# Named pipes in /dev/shm are tmpfs — gone on reboot/unlink
+rm -f /dev/shm/honest-hop-*.sk
 ```
 
 Properties:
-- Each SSH key exists only for the duration of the init sequence
-- Keys are shredded after use (`shred -zu` overwrites + deletes)
+- SSH keys exist only as named pipes in tmpfs (RAM-backed, never on SSD)
+- No shred needed — tmpfs is volatile memory
 - The final hop spawns the honest-irc sidecars directly
-- No SSH key material persists on any disk
+- No SSH key material persists on any storage device
 - If any hop is compromised, the attacker sees only another SSH connection
-- The chain of trust is ephemeral — new keys per session, never reused
 
-## Layer -1: Self-Encrypted Memory (memfd + mlock)
+---
+
+## Layer -1: Self-Encrypted Memory (memfd + mlock + anti-forensics)
 
 All chat data lives in a memory-only filesystem backed by an encrypted `memfd`:
 
@@ -47,41 +54,73 @@ All chat data lives in a memory-only filesystem backed by an encrypted `memfd`:
 use std::fs::File;
 use std::os::unix::io::FromRawFd;
 
-// Create anonymous in-memory file (never touches disk)
+// 0. Disable ptrace inspection and core dumps (anti-forensics)
+unsafe {
+    libc::prctl(libc::PR_SET_DUMPABLE, 0);
+
+    // Disable coredumps
+    let mut rlim = libc::rlimit { rlim_cur: 0, rlim_max: 0 };
+    libc::setrlimit(libc::RLIMIT_CORE, &rlim);
+}
+
+// 1. Create anonymous in-memory file (never touches disk)
 let fd = unsafe { libc::memfd_create(
     b"honest-irc-chat\0".as_ptr() as *const _,
     libc::MFD_CLOEXEC | libc::MFD_ALLOW_SEALING
 ) };
 
-// Seal it — no resizing, no writing to disk, no future writes from outside
+// 2. Set size
+unsafe { libc::ftruncate(fd, size as libc::off_t); }
+
+// 3. Map into memory with read+write
+let ptr = unsafe {
+    libc::mmap(
+        std::ptr::null_mut(), size,
+        libc::PROT_READ | libc::PROT_WRITE,
+        libc::MAP_SHARED, fd, 0,
+    )
+};
+
+// 4. Write data / initialize buffers HERE (while still writable)
+
+// 5. Lock into RAM + exclude from core dumps
+unsafe {
+    libc::mlock(ptr, size);
+    libc::madvise(ptr, size, libc::MADV_DONTDUMP);
+}
+
+// 6. Seal — no resize, no write access after population
+// NOTE: crypto.mem keeps write access for session key rotation
 unsafe {
     libc::fcntl(fd, libc::F_ADD_SEALS,
-        libc::F_SEAL_SEAL |   // no further seals can be added
-        libc::F_SEAL_SHRINK | // cannot decrease size
-        libc::F_SEAL_GROW |   // cannot increase size
-        libc::F_SEAL_WRITE    // cannot write to it
+        libc::F_SEAL_SHRINK |   // cannot decrease size
+        libc::F_SEAL_GROW |     // cannot increase size
+        libc::F_SEAL_WRITE |    // cannot write to it (for chat/identity/seed)
+        libc::F_SEAL_SEAL       // no further seals can be added
     );
 }
 
-// Lock into RAM — never swapped to disk
-unsafe { libc::mlock(ptr, size); }
-
-// The chat data now exists ONLY in this memory region.
-// When the process exits, the kernel reclaims the memory.
-// Nothing remains on any storage device.
+// 7. Make read-only
+unsafe { libc::mprotect(ptr as *mut libc::c_void, size, libc::PROT_READ); }
 ```
 
-Memory regions:
-- `chat.mem`: all IRC messages (encrypted at rest in memfd)
-- `crypto.mem`: session keys, ephemeral Kyber keypairs, nonce counters
-- `identity.mem`: honesty vector, Dilithium signing keys (loaded from disk, then shredded)
-- `seed.mem`: the 1-bit quantized LLM weights used as per-byte encryption seeds
+### Memory regions and sealing policies:
 
-All regions are:
-- `memfd_create` + `F_SEAL_WRITE` — write-sealed, no disk backing
-- `mlock` — locked in RAM, never swapped
-- `mprotect(PROT_READ)` after writing — read-only after initialization
-- Freed on process exit (kernel reclaims, no shredding needed)
+| Region | Write after init? | Reason |
+|--------|-------------------|--------|
+| `chat.mem` | NO (F_SEAL_WRITE) | Message history is append-only, sealed |
+| `crypto.mem` | YES (no F_SEAL_WRITE) | Session keys rotate every N messages |
+| `identity.mem` | NO (F_SEAL_WRITE) | Honesty vector loaded once, immutable |
+| `seed.mem` | NO (F_SEAL_WRITE) | LLM weights loaded once, immutable |
+
+### Required capabilities:
+
+```bash
+# mlock of >64KB requires CAP_IPC_LOCK
+sudo setcap cap_ipc_lock=+ep /usr/bin/honest-irc
+```
+
+---
 
 ## Layer 0: honest-vpn (Mullvad Double Hop)
 
@@ -89,136 +128,124 @@ All regions are:
 honest-vpn --entry switzerland --exit iceland
 ```
 
-Two-hop WireGuard tunnel:
-1. Entry: Mullvad server in Switzerland (hides real IP)
-2. Exit: Mullvad server in Iceland (appears as source)
+Two-hop WireGuard tunnel. Rotated every 4 hours.
 
-Each hop adds ~15ms latency. Total overhead: ~30ms.
-Tunnel rotated every 4 hours (new entry/exit pair, new WireGuard keys).
+---
 
-## Layer 1: honest-crypt (Kyber + X25519 + Per-Byte LLM Seed)
+## Layer 1: honest-crypt (Kyber + X25519 + Per-Byte LLM Sub-Keys)
 
-### Kyber-X25519 Hybrid Key Exchange
+### Hybrid Key Exchange
+
+Kyber-1024 (ML-KEM) + X25519 ECDH. Shared secret = Kyber || X25519.
+
+### Forward Secrecy via Session Key Rotation
 
 ```
-Alice                                    Bob
-  │                                       │
-  │── Kyber public key + X25519 pub ─────▶│
-  │                                       │
-  │◀── Kyber ciphertext + X25519 pub ────│
-  │                                       │
-  │  shared = Kyber.Decap(ct) XOR          │
-  │           X25519.DH(alice_sec, bob_pub)│
-  │                                       │
-  │  session_key = HKDF(shared, "honest-irc-v1")
+Every N=1000 messages: rotate session key.
+  1. Fresh Kyber+X25519 exchange
+  2. New session_key = HKDF(new_shared, "honest-irc-rotate")
+  3. Nonce counter resets
+  4. Old sub-keys undecryptable: need old nonce + old session_key + old LLM weights
 ```
 
-### Per-Byte Encryption via Quant1bitLLM Seed
-
-After the session key is established, each BYTE of plaintext gets its own
-unique encryption sub-key, derived from a 1-bit quantized LLM weight matrix:
+### Per-Byte Sub-Key Derivation (Timing-Safe)
 
 ```
 For byte i in message:
-  seed[i] = Quant1bitLLM.weights[i % weight_count]  // {-1, 0, +1}
-  sub_key[i] = HKDF(session_key || seed[i] || i)
+  // Load ALL THREE possible sub-keys into registers (no timing leak)
+  sub_key_neg[i]  = HKDF(session_key || "neg" || nonce || i)
+  sub_key_zero[i] = HKDF(session_key || "zero" || nonce || i)
+  sub_key_pos[i]  = HKDF(session_key || "pos" || nonce || i)
+
+  // Use constant-time selection (cmov / select) based on LLM weight
+  w = LLM_weights[i % weight_count]  // {-1, 0, +1}
+  sub_key[i] = select(sub_key_neg, sub_key_zero, sub_key_pos, w)
+
   cipher_byte[i] = plain_byte[i] XOR sub_key[i][0]
 ```
 
-The Quant1bitLLM is a tiny (~1MB) ternary-quantized language model
-(it can generate coherent but nonsensical text). Its weight matrix is
-used as an entropy source for per-byte key derivation:
+This prevents cache-timing attacks on the weight lookup: all three
+sub-keys are always loaded, the selection is constant-time.
+
+### LLM Weight Distribution (Out-of-Band)
+
+The LLM checkpoint is NOT transmitted over the encrypted channel.
+Distribution options:
+
+1. **BIP39 seed phrase**: 12 words → HKDF → deterministic weights.
+   Both peers agree on 12 words. No file transfer needed.
+2. **QR-split**: weights split across N QR codes, scanned in sequence
+3. **USB dead drop**: physical handoff
+4. **Pre-shared in hardware**: burned into ROM/flash at manufacture
+
+### LLM Weights + CSPRNG via HKDF (Not Raw XOR)
+
+LLM weights are NOT used directly as keystream. They are combined with
+an ephemeral CSPRNG nonce via HKDF-SHA256:
 
 ```
-Quant1bitLLM("the quick brown fox") → weight_activations = {-1, 0, +1}^N
-Each weight activation = one byte's seed
-If weight = 0:    sub_key derived from session_key || "zero" || i
-If weight = +1:   sub_key derived from session_key || "pos" || i  
-If weight = -1:   sub_key derived from session_key || "neg" || i
+For each message:
+  nonce = CSPRNG.random(32 bytes)
+  For each byte i:
+    sub_key[i] = HKDF(session_key || LLM_weight[i] || nonce || i)
 ```
 
-Properties:
-- Each byte has a unique encryption key
-- The key schedule is deterministic (same LLM weights → same sub-keys)
-- An attacker must recover BOTH the session key AND the LLM weight matrix
-- The LLM weights exist only in sealed memory (Layer -1)
-- Pattern analysis is impossible: identical plaintext bytes produce different ciphertext
-- The LLM acts as a "semantic one-time pad" — weight activations are unpredictable to anyone without the specific model file
+This prevents many-times pad key reuse attacks.
 
-### Why Quant1bitLLM?
-
-- A 1-bit quantized LLM produces {-1, 0, +1} activations — exactly the ternary space
-- The weight matrix is 12.80x smaller than fp32 (same as MLX-QUANT)
-- The activations are deterministic given the same input prompt
-- Using "the current chat context" as prompt → per-message unique key schedule
-- Even if session key leaks, attacker needs the specific LLM checkpoint used
-- The LLM checkpoint is never transmitted — it's a pre-shared secret between peers
+---
 
 ## Layer 2: honest-mesh (Tailscale/Headscale)
 
-Standard Tailscale mesh. All traffic at this layer is ALREADY encrypted
-by honest-crypt. Tailscale adds a second layer of WireGuard encryption.
+Standard Tailscale mesh. All traffic already encrypted by honest-crypt.
+
+---
 
 ## Layer 3: honest-ircd (IRC Daemon)
 
 The chat protocol operates over the encrypted channels. Messages are
-encrypted per-byte, stored in sealed memory, and shredded on exit.
-
-```
-    ┌────────────────────────────────────────┐
-    │         Self-Encrypted Memory           │
-    │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │
-    │  │ chat │ │crypto│ │ident │ │ seed │  │
-    │  │ .mem │ │ .mem │ │ .mem │ │ .mem │  │
-    │  └──────┘ └──────┘ └──────┘ └──────┘  │
-    │    mlock'd + sealed + read-only         │
-    └────────────────────────────────────────┘
-```
+encrypted per-byte, stored in sealed memory.
 
 ---
 
-## Complete Init Sequence (honest-irc init)
+## Trust Model
 
-```
-1. Generate 3x throwaway SSH keys
-2. Establish 3-hop SSH tunnel
-3. Spawn honest-vpn (Mullvad double-hop)
-4. Load Quant1bitLLM weights into seed.mem (mlock, seal)
-5. Generate Kyber + X25519 keypairs → crypto.mem (mlock, seal)
-6. Load honesty vector → identity.mem (mlock, seal)
-7. Erase identity.json from disk (shred -zu)
-8. Spawn honest-mesh (Tailscale)
-9. Spawn honest-ircd
-10. Shred SSH keys
-11. Join #general
-```
+### Honesty-Auth: Identity Through Personality
 
-## Shutdown Sequence (SIGTERM / exit)
+No passwords. No OAuth. No email. Identity is a vector of deeply personal
+answers. The trust model relies on the fact that an impostor cannot
+consistently fake someone's life story over time.
 
-```
-1. Send /quit to all rooms
-2. Flush any pending encrypted messages
-3. munlock all memory regions
-4. close memfd (kernel reclaims memory)
-5. Shred any temp files in /tmp
-6. Process exits
-7. Nothing remains. Zero trace.
-```
+- Stable fields (birth, names, constellation): must match exactly
+- Volatile fields (song, mood, belief): can vary
+- Overall match threshold: 80%
+- Re-verification: every 30 days
+
+This belongs in the Trust Model, not the Threat Model, because it is not
+a cryptographic defense — it is a social/behavioral trust mechanism.
+
+---
 
 ## Threat Model
 
 | Attack | Defense |
 |--------|---------|
 | Disk forensics | memfd — nothing on disk, ever |
-| RAM cold boot | mlock'd region is small (<100MB), encrypted at rest in memory too |
+| SSD wear-leveling recovery | SSH keys via /dev/fd pipes, tmpfs only |
+| RAM cold boot | mlock'd regions, encrypted at rest in memory |
+| /proc/PID/mem inspection | prctl(PR_SET_DUMPABLE, 0), MADV_DONTDUMP |
+| Core dump analysis | RLIMIT_CORE = 0 |
+| ptrace debugger attach | PR_SET_DUMPABLE = 0 |
 | Quantum computer breaks Kyber | X25519 hybrid — classical ECDH still holds |
 | Quantum computer breaks ECDH | Kyber-1024 — PQC KEM still holds |
-| Session key leaked | Per-byte LLM sub-keys — need LLM weights too |
+| Session key leaked | Forward secrecy via rotation every N messages |
 | LLM weights stolen | Pre-shared, never transmitted, unique per peer-pair |
+| LLM weight timing side-channel | Load all 3 sub-keys, constant-time select (CMOV) |
+| LLM weights as raw keystream | Combined with CSPRNG nonce via HKDF |
 | Mullvad compromised | Tailscale WireGuard is second encryption layer |
 | Tailscale compromised | Kyber+X25519 encryption already applied |
-| Both Mullvad AND Tailscale compromised | Per-byte LLM sub-keys still protect each byte |
-| Impersonation | Honesty-auth — cannot fake life story consistently |
+| Both compromised | Per-byte LLM sub-keys still protect each byte |
+| Impersonation | Honesty-auth — see Trust Model |
 | Replay attack | Per-message nonce + per-byte sub-key prevents reuse |
 | Metadata analysis | Double-hop VPN hides source, Tailnet hides peer topology |
-| Rubber-hose cryptanalysis | Honesty vector is emotional truth — cannot extract what isn't a "secret" |
+| mlock limit exceeded | CAP_IPC_LOCK via setcap, documented in setup |
+| memfd seal prevents key rotation | crypto.mem keeps write access for rotation |
