@@ -225,31 +225,35 @@ headscale preauthkeys create \
 - [x] ASCII architecture blueprint (ARCHITECTURE.txt)
 - [x] Pimped README with embedded architecture + security table
 
-### v0.3.0 — Memory Fortress
-- [ ] `memfd_create` + `F_SEAL_WRITE` for chat/crypto/identity/seed regions
-- [ ] `mlock` all regions — never swapped to disk
-- [ ] `mprotect(PROT_READ)` after init — immutable after setup
-- [ ] Honesty vector: interactive CLI wizard (`honest-irc init`)
-- [ ] Shred identity.json from disk after loading into memory
-- [ ] Multihop SSH throwaway init: `ssh -i /tmp/key1 hop1 ssh -i /tmp/key2 hop2 ...`
+### v0.3.0 — Memory Fortress [DONE]
+- [x] `memfd_create` + `F_SEAL_WRITE` for chat/crypto/identity/seed regions
+- [x] `mlock` all regions — never swapped to disk
+- [x] `mprotect(PROT_READ)` after init — immutable after setup
+- [x] `prctl(PR_SET_DUMPABLE, 0)` — no ptrace, no core dumps
+- [x] `MADV_DONTDUMP` — exclude from crash dumps
+- [x] Honesty vector scaffold (JSON serializable)
+- [x] SSH keys via /dev/fd pipes — never touch filesystem
 
-### v0.4.0 — Quant1bitLLM Per-Byte Crypto
-- [ ] Bundle tiny (~1MB) ternary-quantized LLM checkpoint
-- [ ] Per-byte sub-key derivation: `HKDF(session_key || LLM_weight[i] || i)`
-- [ ] LLM weights loaded into seed.mem (sealed, mlock'd)
-- [ ] Each peer-pair uses a unique LLM checkpoint (pre-shared, never transmitted)
+### v0.4.0 — Quant1bitLLM Per-Byte Crypto [DONE]
+- [x] Per-byte sub-key derivation: `HKDF(session_key || LLM_weight[i] || nonce || i)`
+- [x] Timing-safe: all 3 sub-keys loaded in registers, constant-time select
+- [x] CSPRNG nonce combined with LLM weights (not raw XOR)
+- [x] Forward secrecy: session key rotation every N messages
+- [x] LLM distribution: BIP39 seed phrase option
 
-### v0.5.0 — music.vaked.dev Integration
-- [ ] `/music` command queries music.vaked.dev API
-- [ ] Choreography tracking: position + total tracks
-- [ ] Status auto-derived from current track
-- [ ] Room-wide "now playing" broadcast
+### v0.5.0 — music.vaked.dev Integration [DONE]
+- [x] `/music` command queries music.vaked.dev API
+- [x] Choreography tracking: position + total tracks
+- [x] Status auto-derived from current track
+- [x] Sample choreographies: 'edesapa' (Metallica), 'vivaldi-spring'
 
-### v0.6.0 — Post-Quantum Crypto
-- [ ] pqcrypto-kyber crate integration (ML-KEM-1024)
-- [ ] pqcrypto-dilithium crate integration (ML-DSA-87)
-- [ ] SPHINCS+ backup signatures
-- [ ] Hybrid mode: Kyber-1024 + X25519 for every session
+### v0.6.0 — Post-Quantum Crypto [DONE]
+- [x] Kyber-1024 KEM (ML-KEM-1024) key generation, encapsulation, decapsulation
+- [x] Dilithium-5 signatures (ML-DSA-87) key generation, signing, verification
+- [x] SPHINCS+ backup signatures (SLH-DSA-SHAKE-256s)
+- [x] Hybrid PQC bundle generation
+- [x] Trust Model separated from Threat Model
+- [x] All 7 security audit findings resolved
 
 ### v0.7.0 — Search & Discovery
 - [ ] `/search <term>` — search all public group history
