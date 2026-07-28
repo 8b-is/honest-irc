@@ -84,6 +84,9 @@ impl IrcDaemon {
                 None
             }
             Message::Join { from, room } => {
+                if !self.rooms.iter().any(|r| &r.name == room) {
+                    self.rooms.push(Room { name: room.clone(), members: vec![] });
+                }
                 if let Some(r) = self.rooms.iter_mut().find(|r| &r.name == room) {
                     if !r.members.contains(from) {
                         r.members.push(from.clone());
@@ -118,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_ping_pong() {
-        let irc = IrcDaemon::new(
+        let mut irc = IrcDaemon::new(
             Identity {
                 route_id: "deadbeef".into(),
                 display_name: crate::crypto::DisplayName {
