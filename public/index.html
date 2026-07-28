@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>honest-irc • QVE Audit</title>
+<style>body{background:#070b16;color:#c8d6e5;font-family:monospace;max-width:720px;margin:0 auto;padding:24px;line-height:1.6}
+h1{color:#6c5ce7;font-size:16px}h2{color:#a29bfe;font-size:13px;margin-top:24px}
+.pass{color:#00cec9}.fail{color:#ff4747}.warn{color:#ffd700}
+pre{background:rgba(255,255,255,.03);padding:12px;border-radius:6px;font-size:11px;overflow-x:auto}
+a{color:#6c5ce7}</style></head><body>
+<h1>honest-irc • QVE Audit</h1>
+<p>Automated reverse-engineering, fuzzing, and attack surface analysis. Runs daily.</p>
+<h2>Latest Report</h2>
+<pre id="report">Loading audit report...</pre>
+<p><a href="https://github.com/8b-is/honest-irc/actions/workflows/qve-audit.yml">View CI runs</a></p>
+<script>
+fetch('index.txt').then(r=>r.text()).then(t=>{
+  document.getElementById('report').textContent = t;
+}).catch(()=>{
+  document.getElementById('report').textContent = 'Audit report not yet generated. First CI run pending.';
+});
+</script>
+</body></html>
