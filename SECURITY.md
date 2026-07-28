@@ -256,7 +256,10 @@ honest-irc is a fully air-gapped messaging system. The following are PROHIBITED:
 
 - URL/link sharing of any kind — all URLs are stripped from messages
 - Egress connections — honest-ircd never connects outward except to peers
-- External API calls — music.vaked.dev data is local choreography only
+- External API calls — music.vaked.dev data is local choreography only, never fetched
 - Image/media embedding — text-only protocol
 - All integrations are LOCAL: choreographies live in sealed memory, never fetched
+- Protocol commands are ASCII-only. Message bodies are UTF-8 for display.
+- No Unicode in wire protocol — all commands use 7-bit ASCII for maximum compatibility.
+  Display names may contain Unicode, but are transmitted as UTF-8 payloads.
 
