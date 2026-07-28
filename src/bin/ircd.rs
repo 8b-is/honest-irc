@@ -2,9 +2,9 @@ use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 
-use honest_irc::crypto::{Identity, DisplayName, CryptoSession};
+use honest_irc::crypto::{Identity, DisplayName};
 use honest_irc::irc::{IrcDaemon, Message};
-use honest_irc::hardening::{sanitize_room, sanitize_body, strip_egress, safe_parse_irc};
+use honest_irc::hardening::{sanitize_room, sanitize_body, strip_egress};
 use honest_irc::discovery::{SearchIndex, PeerDiscovery, ChatHistory, OverlayNetwork};
 use honest_irc::rate::RateLimiter;
 

@@ -74,6 +74,7 @@ fn main() {
 
         "connect" => {
             println!("connecting to honest-ircd on 127.0.0.1:9667...");
+            println!("(use 'honest-client' for the full TUI client)");
             println!("type /help for commands, Ctrl+C to quit");
             println!();
             // In production: open TCP connection to ircd and start interactive loop
