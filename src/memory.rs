@@ -64,7 +64,7 @@ impl SealedMemory {
             }
 
             // Lock into RAM
-            unsafe { libc::mlock(ptr, size); }
+            unsafe { libc::mlock(ptr, size as libc::size_t); }
 
             Ok(SealedMemory {
                 ptr: ptr as *mut u8,
@@ -99,7 +99,7 @@ impl SealedMemory {
         unsafe {
             libc::mprotect(
                 self.ptr as *mut libc::c_void,
-                self.size,
+                self.size as libc::size_t,
                 libc::PROT_READ,
             );
         }
@@ -111,7 +111,7 @@ impl Drop for SealedMemory {
         #[cfg(target_os = "linux")]
         unsafe {
             if !self.ptr.is_null() {
-                libc::munlock(self.ptr, self.size as libc::size_t);
+                libc::munlock(self.ptr as *const libc::c_void, self.size as libc::size_t);
                 libc::munmap(self.ptr as *mut libc::c_void, self.size as libc::size_t);
             }
             // fd is dropped by the File wrapper, which closes it.
