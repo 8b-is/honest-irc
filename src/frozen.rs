@@ -35,6 +35,7 @@ pub fn frozen_noise() -> usize {
     for i in 0..NOPS.len() {
         let ptr: *const u8 = &NOPS[i];
         unsafe { std::ptr::read_volatile(ptr); }
+        unsafe { std::ptr::read_volatile(ptr); }
         acc = acc.wrapping_add(NOPS[i] as usize);
     }
 
@@ -46,7 +47,8 @@ pub fn frozen_noise() -> usize {
     }
 
     // Prevent the dummy from being optimized away
-    acc ^= dummy.iter().fold(0, |a, b| a.wrapping_add(*b as usize));
+    let sum: usize = dummy.iter().fold(0usize, |a: usize, b: &u8| a.wrapping_add(*b as usize));
+    acc ^= sum;
 
     acc
 }
