@@ -4,12 +4,14 @@
 /// CRYSTALS-Dilithium (ML-DSA-87), and SPHINCS+ (SLH-DSA-SHAKE-256s).
 ///
 /// In production: replace with pqcrypto crates when they stabilize.
-/// Currently using classical algorithms as placeholders.
+/// This module generates dummy random bytes, not functional PQC algorithms.
+/// Do not use it for encryption, authentication, or production key material.
+/// Signature verification fails closed until a real implementation is available.
 
 use rand::Rng;
 
 /// ML-KEM-1024 (CRYSTALS-Kyber) Key Encapsulation Mechanism.
-/// Post-quantum secure.
+/// Unsupported placeholder; not post-quantum secure.
 pub struct KyberKeypair {
     pub public_key: Vec<u8>,
     #[allow(dead_code)]
@@ -43,7 +45,7 @@ impl KyberKeypair {
 }
 
 /// ML-DSA-87 (CRYSTALS-Dilithium) Digital Signature Algorithm.
-/// Post-quantum secure.
+/// Unsupported placeholder; not post-quantum secure.
 pub struct DilithiumKeypair {
     #[allow(dead_code)]
     public_key: Vec<u8>,
@@ -66,10 +68,10 @@ impl DilithiumKeypair {
         (0..4595).map(|_| rng.gen()).collect() // Dilithium-5 sig size
     }
 
-    /// Verify a signature.
-    pub fn verify(_pk: &[u8], message: &[u8], _signature: &[u8]) -> bool {
+    /// Unsupported: always rejects signatures until a real verifier is implemented.
+    pub fn verify(_pk: &[u8], _message: &[u8], _signature: &[u8]) -> bool {
         // In production: pqcrypto_dilithium::verify(pk, message, signature)
-        message.len() > 0 // placeholder
+        false
     }
 }
 
@@ -97,9 +99,9 @@ impl SphincsKeypair {
         (0..7856).map(|_| rng.gen()).collect() // SLH-DSA sig size
     }
 
-    /// Verify a signature.
-    pub fn verify(_pk: &[u8], message: &[u8], _signature: &[u8]) -> bool {
-        message.len() > 0
+    /// Unsupported: always rejects signatures until a real verifier is implemented.
+    pub fn verify(_pk: &[u8], _message: &[u8], _signature: &[u8]) -> bool {
+        false
     }
 }
 
@@ -124,6 +126,28 @@ impl PqcBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unimplemented_dilithium_rejects_all_signatures() {
+        for (pk, message, signature) in [
+            (vec![], vec![], vec![]),
+            (vec![], b"hello".to_vec(), vec![]),
+            (vec![1; 2592], b"hello".to_vec(), vec![2; 4595]),
+        ] {
+            assert!(!DilithiumKeypair::verify(&pk, &message, &signature));
+        }
+    }
+
+    #[test]
+    fn unimplemented_sphincs_rejects_all_signatures() {
+        for (pk, message, signature) in [
+            (vec![], vec![], vec![]),
+            (vec![], b"hello".to_vec(), vec![]),
+            (vec![1; 32], b"hello".to_vec(), vec![2; 7856]),
+        ] {
+            assert!(!SphincsKeypair::verify(&pk, &message, &signature));
+        }
+    }
 
     #[test]
     fn test_kyber_keypair_generation() {
