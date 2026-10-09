@@ -84,6 +84,12 @@ honest-irc up
 
 ## security
 
+Implementation status: `src/pqc.rs` contains nonfunctional random-byte
+placeholders, not Kyber, Dilithium, or SPHINCS+ implementations. Both signature
+verification entry points always reject. The architecture below describes intended
+layers; it does not establish end-to-end encryption or post-quantum security.
+Do not use placeholder key material or signatures for real communications.
+
 | layer | what | why |
 |-------|------|-----|
 | SSH  | 3-hop throwaway init, keys shredded | no persistent key material |
