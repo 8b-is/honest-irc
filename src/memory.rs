@@ -18,9 +18,10 @@ impl SealedMemory {
 
         #[cfg(target_os = "linux")]
         {
+            use std::os::unix::io::FromRawFd;
             let fd = unsafe {
                 libc::memfd_create(
-                    name_c.as_ptr(),
+                    _name_c.as_ptr(),
                     libc::MFD_CLOEXEC | libc::MFD_ALLOW_SEALING,
                 )
             };
@@ -68,7 +69,7 @@ impl SealedMemory {
             Ok(SealedMemory {
                 ptr: ptr as *mut u8,
                 size,
-                fd: Some(unsafe { File::from_raw_fd(fd) }),
+                fd: Some(unsafe { std::fs::File::from_raw_fd(fd) }),
             })
         }
 
