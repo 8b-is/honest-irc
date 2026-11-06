@@ -13,17 +13,17 @@ permissions:
 jobs:
   audit:
     name: Security audit + fuzzing
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
       - name: Install audit tools
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq binutils strace gdb 2>/dev/null || true
           cargo install cargo-audit 2>/dev/null || true
 
-      - uses: useblacksmith/cache@v5
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
